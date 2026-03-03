@@ -559,7 +559,7 @@ def run_bot(token):
     app.add_handler(ChatMemberHandler(handle_my_chat_member, chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER))
     bot_info = loop.run_until_complete(app.bot.get_me())
     print(f"Bot '{bot_info.username}' is running...")
-    app.run_polling(close_loop=False)
+    app.run_polling(stop_signals=None)
 
 # --- KHỞI CHẠY (BẮT ĐẦU TỪ ĐÂY) ---
 if __name__ == '__main__':
@@ -586,4 +586,5 @@ if __name__ == '__main__':
         thread.start()
 
     for thread in threads:
+
         thread.join()
