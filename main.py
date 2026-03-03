@@ -10,6 +10,7 @@ import queue as _queue
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer # QUAN TRỌNG: Dành cho Render
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, MessageEntity, Bot
+from telegram.constants import UpdateType
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler,
     MessageHandler, filters, ContextTypes, ConversationHandler, ChatMemberHandler
@@ -531,6 +532,14 @@ async def handle_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TY
     elif status in ("left", "kicked"):
         db_execute("UPDATE groups SET active = 0 WHERE id = ?", (chat.id,))
 
+async def record_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    if not chat: 
+        return
+    if chat.type in ("group", "supergroup"):
+        db_execute("INSERT OR IGNORE INTO groups (id, title, active) VALUES (?, ?, 1)", (chat.id, chat.title or ""))
+        db_execute("UPDATE groups SET title = ?, active = 1 WHERE id = ?", (chat.title or "", chat.id))
+
 def reload_schedules(bot):
     for t, pid in db_execute("SELECT time, post_id FROM schedules", fetch=True):
         try:
@@ -556,11 +565,11 @@ def run_bot(token):
     )
     app.add_handler(CommandHandler("start", start))
     app.add_handler(conv)
-    app.add_handler(MessageHandler(filters.ChatType.GROUPS, lambda u, c: db_execute("INSERT OR IGNORE INTO groups (id, title, active) VALUES (?, ?, 1)", (u.effective_chat.id, u.effective_chat.title))))
+    app.add_handler(MessageHandler(filters.ChatType.GROUPS, record_group))
     app.add_handler(ChatMemberHandler(handle_my_chat_member, chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER))
     bot_info = loop.run_until_complete(app.bot.get_me())
     print(f"Bot '{bot_info.username}' is running...")
-    app.run_polling(stop_signals=None)
+    app.run_polling(stop_signals=None, allowed_updates=[UpdateType.MESSAGE, UpdateType.MY_CHAT_MEMBER, UpdateType.CALLBACK_QUERY])
 
 # --- KHỞI CHẠY (BẮT ĐẦU TỪ ĐÂY) ---
 if __name__ == '__main__':
