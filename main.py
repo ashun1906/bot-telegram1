@@ -463,8 +463,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith('selp_'):
         _, mode, pid = data.split('_')
         if mode == "N": 
-            await query.edit_message_text(f"🚀 Đã đưa bài #{pid} vào hàng chờ!")
+            await query.edit_message_text(f"🚀 Đang đăng bài #{pid}... Vui lòng chờ báo cáo.")
             try:
+                _ensure_worker()
                 _post_queue.put((context.bot, pid, user_id))
             except:
                 try:
@@ -586,5 +587,4 @@ if __name__ == '__main__':
         thread.start()
 
     for thread in threads:
-
         thread.join()
